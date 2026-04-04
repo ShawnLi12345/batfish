@@ -1,0 +1,24 @@
+{
+    "class": "org.batfish.question.communitymatchusage.CommunityReferencesQuestion",
+    "differential": false,
+    "nodes": "${nodes}",
+    "instance": {
+        "description": "Lists community match expressions and the nodes that reference them.",
+        "instanceName": "communityReferences",
+        "orderedVariableNames": [
+            "nodes"
+        ],
+        "tags": [
+            "bgp",
+            "community"
+        ],
+        "variables": {
+            "nodes": {
+                "description": "Include nodes matching this specifier",
+                "type": "nodeSpec",
+                "optional": true,
+                "displayName": "Nodes"
+            }
+        }
+    }
+}
