@@ -28,6 +28,7 @@ public class CommunityReferencesAnswerer extends Answerer {
 
   public static final String COL_COMMUNITY = "Community";
   public static final String COL_NODE_LIST = "Node_List";
+  public static final String COL_NODE_COUNT = "Node_Count";
 
   public CommunityReferencesAnswerer(Question question, IBatfish batfish) {
     super(question, batfish);
@@ -75,6 +76,7 @@ public class CommunityReferencesAnswerer extends Answerer {
               Row.builder(columnMap)
                       .put(COL_COMMUNITY, entry.getKey())
                       .put(COL_NODE_LIST, nodes)
+                      .put(COL_NODE_COUNT, nodes.size())
                       .build());
     }
     return rows.build();
@@ -88,6 +90,12 @@ public class CommunityReferencesAnswerer extends Answerer {
                             COL_NODE_LIST,
                             Schema.list(Schema.NODE),
                             "List of nodes referencing this community",
+                            false,
+                            true),
+                    new ColumnMetadata(
+                            COL_NODE_COUNT,
+                            Schema.INTEGER,
+                            "Number of nodes referencing this community",
                             false,
                             true));
     return new TableMetadata(
