@@ -3,7 +3,7 @@
     "differential": false,
     "nodes": "${nodes}",
     "instance": {
-        "description": "Lists nodes that use community match expressions.",
+        "description": "Lists number of community match expressions each nodes uses.",
         "instanceName": "communityMatchUsage",
         "orderedVariableNames": [
             "nodes"

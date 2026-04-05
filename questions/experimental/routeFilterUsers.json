@@ -1,0 +1,24 @@
+{
+  "class": "org.batfish.question.routefilters.RouteFilterUsersQuestion",
+  "differential": false,
+  "nodes": "${nodes}",
+  "instance": {
+    "description": "Lists number of route filters each node uses.",
+    "instanceName": "routeFilterUsers",
+    "orderedVariableNames": [
+      "nodes"
+    ],
+    "tags": [
+      "bgp",
+      "community"
+    ],
+    "variables": {
+      "nodes": {
+        "description": "Include nodes matching this specifier",
+        "type": "nodeSpec",
+        "optional": true,
+        "displayName": "Nodes"
+      }
+    }
+  }
+}
