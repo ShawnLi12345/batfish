@@ -1,0 +1,23 @@
+{
+    "class": "org.batfish.question.routepolicyproperties.MultipathMatchUsageQuestion",
+    "differential": false,
+    "nodes": "${nodes}",
+    "instance": {
+        "description": "Groups nodes by their multipath equivalent AS path match mode. Nodes without both EBGP and IBGP multipath enabled are grouped under N/A.",
+        "instanceName": "multipathMatchUsage",
+        "orderedVariableNames": [
+            "nodes"
+        ],
+        "tags": [
+            "bgp"
+        ],
+        "variables": {
+            "nodes": {
+                "description": "Include nodes matching this specifier",
+                "type": "nodeSpec",
+                "optional": true,
+                "displayName": "Nodes"
+            }
+        }
+    }
+}
