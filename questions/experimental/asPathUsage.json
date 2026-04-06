@@ -1,0 +1,23 @@
+{
+    "class": "org.batfish.question.routepolicyproperties.AsPathUsageQuestion",
+    "differential": false,
+    "nodes": "${nodes}",
+    "instance": {
+        "description": "Lists AS paths and the nodes that have routes using that path.",
+        "instanceName": "asPathUsage",
+        "orderedVariableNames": [
+            "nodes"
+        ],
+        "tags": [
+            "bgp"
+        ],
+        "variables": {
+            "nodes": {
+                "description": "Include nodes matching this specifier",
+                "type": "nodeSpec",
+                "optional": true,
+                "displayName": "Nodes"
+            }
+        }
+    }
+}
