@@ -13,6 +13,7 @@ import org.batfish.common.NetworkSnapshot;
 import org.batfish.common.plugin.IBatfish;
 import org.batfish.datamodel.BgpProcess;
 import org.batfish.datamodel.Configuration;
+import org.batfish.datamodel.Vrf;
 import org.batfish.datamodel.pojo.Node;
 import org.batfish.datamodel.answers.AnswerElement;
 import org.batfish.datamodel.answers.Schema;
@@ -58,13 +59,15 @@ public class TiebreakerUsageAnswerer extends Answerer {
     Map<String, Set<String>> tbkToNodes = new TreeMap<>();
     for(String node : nodeSpecifier.resolve(ctxt)){
       Configuration config = ctxt.getConfigs().get(node);
-      BgpProcess bProcess = config.getDefaultVrf().getBgpProcess();
-      if(bProcess != null){
-        String tiebreaker = bProcess.getTieBreaker().toString();
-        if(!tbkToNodes.containsKey(tiebreaker)){
-          tbkToNodes.put(tiebreaker, new TreeSet<>());
+      for(Vrf vrf : config.getVrfs().values()){
+        BgpProcess bProcess = vrf.getBgpProcess();
+        if(bProcess != null){
+          String tiebreaker = bProcess.getTieBreaker().toString();
+          if(!tbkToNodes.containsKey(tiebreaker)){
+            tbkToNodes.put(tiebreaker, new TreeSet<>());
+          }
+          tbkToNodes.get(tiebreaker).add(node);
         }
-        tbkToNodes.get(tiebreaker).add(node);
       }
     }
     ImmutableList.Builder<Row> rows = ImmutableList.builder();

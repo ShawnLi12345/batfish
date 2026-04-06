@@ -13,6 +13,7 @@ import org.batfish.common.NetworkSnapshot;
 import org.batfish.common.plugin.IBatfish;
 import org.batfish.datamodel.BgpProcess;
 import org.batfish.datamodel.Configuration;
+import org.batfish.datamodel.Vrf;
 import org.batfish.datamodel.pojo.Node;
 import org.batfish.datamodel.answers.AnswerElement;
 import org.batfish.datamodel.answers.Schema;
@@ -58,17 +59,22 @@ public class MultipathMatchUsageAnswerer extends Answerer {
     Map<String, Set<String>> matchModeToNodes = new TreeMap<>();
     for(String node : nodeSpecifier.resolve(ctxt)){
       Configuration config = ctxt.getConfigs().get(node);
-      BgpProcess bProcess = config.getDefaultVrf().getBgpProcess();
-      String mode;
-      if(bProcess != null && bProcess.getMultipathEbgp() && bProcess.getMultipathIbgp()){
-        mode = bProcess.getMultipathEquivalentAsPathMatchMode().toString();
-      } else {
-        mode = "N/A";
+      for(Vrf vrf : config.getVrfs().values()){
+        BgpProcess bProcess = vrf.getBgpProcess();
+        if(bProcess != null){
+          String mode;
+          if(bProcess.getMultipathEbgp() && bProcess.getMultipathIbgp()){
+            mode = bProcess.getMultipathEquivalentAsPathMatchMode().toString();
+          }
+          else {
+            mode = "N/A";
+          }
+          if(!matchModeToNodes.containsKey(mode)){
+            matchModeToNodes.put(mode, new TreeSet<>());
+          }
+          matchModeToNodes.get(mode).add(node);
+        }
       }
-      if(!matchModeToNodes.containsKey(mode)){
-        matchModeToNodes.put(mode, new TreeSet<>());
-      }
-      matchModeToNodes.get(mode).add(node);
     }
     ImmutableList.Builder<Row> rows = ImmutableList.builder();
 
