@@ -1,0 +1,23 @@
+{
+    "class": "org.batfish.question.routepolicyproperties.BgpPropertiesCountQuestion",
+    "differential": false,
+    "nodes": "${nodes}",
+    "instance": {
+        "description": "Counts BGP process properties across nodes.",
+        "instanceName": "bgpPropertiesCount",
+        "orderedVariableNames": [
+            "nodes"
+        ],
+        "tags": [
+            "bgp"
+        ],
+        "variables": {
+            "nodes": {
+                "description": "Include nodes matching this specifier",
+                "type": "nodeSpec",
+                "optional": true,
+                "displayName": "Nodes"
+            }
+        }
+    }
+}
