@@ -1,0 +1,23 @@
+{
+    "class": "org.batfish.question.routepolicyproperties.CommunitySetRegexQuestion",
+    "differential": false,
+    "nodes": "${nodes}",
+    "instance": {
+        "description": "Lists community set match expression names and corresponding regular expressions.",
+        "instanceName": "communitySetRegex",
+        "orderedVariableNames": [
+            "nodes"
+        ],
+        "tags": [
+            "bgp"
+        ],
+        "variables": {
+            "nodes": {
+                "description": "Include nodes matching this specifier",
+                "type": "nodeSpec",
+                "optional": true,
+                "displayName": "Nodes"
+            }
+        }
+    }
+}
