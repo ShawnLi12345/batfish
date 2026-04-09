@@ -1,0 +1,23 @@
+{
+    "class": "org.batfish.question.routepolicyproperties.SubnetworkPoliciesQuestion",
+    "differential": false,
+    "nodes": "${nodes}",
+    "instance": {
+        "description": "Lists routing policies between routers within a subnetwork.",
+        "instanceName": "subnetworkPolicies",
+        "orderedVariableNames": [
+            "nodes"
+        ],
+        "tags": [
+            "bgp"
+        ],
+        "variables": {
+            "nodes": {
+                "description": "Include nodes matching this specifier",
+                "type": "nodeSpec",
+                "optional": true,
+                "displayName": "Nodes"
+            }
+        }
+    }
+}
