@@ -24,3 +24,19 @@ After installing Pybatfish, use your Python environment of choice (e.g., PyCharm
 
 See complete documentation of Pybatfish on [readthedocs](https://pybatfish.readthedocs.io/en/latest/).
 
+**A new questions test notebook test_notebook.ipynb can be found at the root folder of this repo.**
+
+#### New Questions
+- **CommunityMatchUsage** (`communitymatchusage/`) — Lists number of community match expressions each nodes uses.
+- **CommunityReferences** (`communitymatchusage/`) — Lists community match expressions and the nodes that reference them.
+- **RouteFilterUsers** (`routefilters/`) — Lists number of route filters each node uses.
+- **TiebreakerUsage** (`routepolicyproperties/`) — Lists the BGP tiebreaker used by each node.
+- **MultipathMatchUsage** (`routepolicyproperties/`) — Lists nodes by their multipath match mode. Nodes without both EBGP and IBGP multipath enabled are grouped under N/A.
+- **AsPathUsage** (`routepolicyproperties/`) — Lists AS paths and the nodes that have routes using that path.
+- **BgpPropertiesCount** (`routepolicyproperties/`) — Counts BGP process properties across nodes.
+- **CommunitySetRegex** (`routepolicyproperties/`) — Lists community set match expression names and corresponding regular expressions.
+- **SubnetworkPolicies** (`routepolicyproperties/`) — Lists routing policies between routers within a subnetwork.
+- **SubnetworkPolicyMetrics** (`routepolicyproperties/`) — Counts BGP properties in routing policies between routers within a subnetwork.
+
+All paths relative to `projects/question/src/main/java/org/batfish/question/`.
+
