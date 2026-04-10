@@ -1,0 +1,23 @@
+{
+    "class": "org.batfish.question.routepolicyproperties.SubnetworkPolicyMetricsQuestion",
+    "differential": false,
+    "nodes": "${nodes}",
+    "instance": {
+        "description": "Counts BGP properties in routing policies between routers within a subnetwork.",
+        "instanceName": "subnetworkPolicyMetrics",
+        "orderedVariableNames": [
+            "nodes"
+        ],
+        "tags": [
+            "bgp"
+        ],
+        "variables": {
+            "nodes": {
+                "description": "Include nodes matching this specifier",
+                "type": "nodeSpec",
+                "optional": true,
+                "displayName": "Nodes"
+            }
+        }
+    }
+}
