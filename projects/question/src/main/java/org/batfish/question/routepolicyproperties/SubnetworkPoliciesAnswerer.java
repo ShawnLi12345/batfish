@@ -65,6 +65,7 @@ public class SubnetworkPoliciesAnswerer extends Answerer {
     Map<Ip, String> IDToNode = new TreeMap<>();
     for (String node : nodeSpecifier.resolve(ctxt)){
       Configuration config = ctxt.getConfigs().get(node);
+      if (config.getDefaultVrf() == null) continue;
       BgpProcess bProcess = config.getDefaultVrf().getBgpProcess();
       if(bProcess==null)continue;
       IDToNode.put(bProcess.getRouterId(), node);
@@ -72,6 +73,7 @@ public class SubnetworkPoliciesAnswerer extends Answerer {
 
     for(String node : nodeSpecifier.resolve(ctxt)){
       Configuration config = ctxt.getConfigs().get(node);
+      if (config.getDefaultVrf() == null) continue;
       BgpProcess bProcess = config.getDefaultVrf().getBgpProcess();
       if(bProcess == null)continue;
 

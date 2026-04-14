@@ -57,7 +57,7 @@ public class CommunitySetRegexAnswerer extends Answerer {
       Map<String, CommunitySetMatchExpr> matchExprMap =
           ctxt.getConfigs().get(node).getCommunitySetMatchExprs();
       for (Map.Entry<String, CommunitySetMatchExpr> entry : matchExprMap.entrySet()) {
-        if (structToRegex.containsKey(entry.getKey())) continue;
+        if (entry.getKey().startsWith("~")||structToRegex.containsKey(entry.getKey())) continue;
         CommunitySetMatchExpr matchExpr = entry.getValue();
         String json = BatfishObjectMapper.writeStringRuntimeError(matchExpr);
         int index = json.indexOf("\"regex\"");
