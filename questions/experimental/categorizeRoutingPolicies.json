@@ -1,0 +1,23 @@
+{
+    "class": "org.batfish.question.routepolicyproperties.CategorizeRoutingPoliciesQuestion",
+    "differential": false,
+    "nodes": "${nodes}",
+    "instance": {
+        "description": "Counts routing policies categorized by content and by inbound/outbound direction.",
+        "instanceName": "categorizeRoutingPolicies",
+        "orderedVariableNames": [
+            "nodes"
+        ],
+        "tags": [
+            "bgp"
+        ],
+        "variables": {
+            "nodes": {
+                "description": "Include nodes matching this specifier",
+                "type": "nodeSpec",
+                "optional": true,
+                "displayName": "Nodes"
+            }
+        }
+    }
+}
