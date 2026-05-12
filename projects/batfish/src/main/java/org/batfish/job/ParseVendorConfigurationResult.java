@@ -6,7 +6,6 @@ import static org.batfish.job.ParseVendorConfigurationJob.jobFilenamesToString;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Multimap;
-import java.io.File;
 import java.util.Map;
 import java.util.Map.Entry;
 import javax.annotation.Nonnull;
@@ -194,7 +193,7 @@ public class ParseVendorConfigurationResult
 
   /** Returns a modified host name to use when duplicate hostnames are encountered */
   public static String getModifiedNameBase(String baseName, String filename) {
-    return baseName + "__" + filename.replaceAll(File.separator, "__");
+    return baseName + "__" + filename.replace("/", "__").replace("\\", "__");
   }
 
   public VendorConfiguration getVendorConfiguration() {

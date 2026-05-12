@@ -3,7 +3,7 @@
     "differential": false,
     "nodes": "${nodes}",
     "instance": {
-        "description": "Counts routing policies categorized by content and by inbound/outbound direction.",
+        "description": "Counts routing policies categorized by route filtering policy and by import/export direction.",
         "instanceName": "categorizeRoutingPolicies",
         "orderedVariableNames": [
             "nodes"
