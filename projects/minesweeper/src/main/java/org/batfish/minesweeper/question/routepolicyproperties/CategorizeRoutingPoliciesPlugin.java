@@ -1,4 +1,4 @@
-package org.batfish.question.routepolicyproperties;
+package org.batfish.minesweeper.question.routepolicyproperties;
 
 import com.google.auto.service.AutoService;
 import org.batfish.common.Answerer;

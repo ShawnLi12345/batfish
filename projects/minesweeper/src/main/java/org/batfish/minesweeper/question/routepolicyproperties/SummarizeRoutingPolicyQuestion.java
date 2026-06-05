@@ -1,4 +1,4 @@
-package org.batfish.question.routepolicyproperties;
+package org.batfish.minesweeper.question.routepolicyproperties;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -11,19 +11,19 @@ import org.batfish.specifier.AllNodesNodeSpecifier;
 import org.batfish.specifier.NodeSpecifier;
 import org.batfish.specifier.SpecifierFactories;
 
-public class CategorizeRoutingPoliciesQuestion extends Question {
+public class SummarizeRoutingPolicyQuestion extends Question {
   private static final String PROP_NODES = "nodes";
 
   private final @Nullable String _nodes;
   private final @Nonnull NodeSpecifier _nodeSpecifier;
 
   @JsonCreator
-  private static CategorizeRoutingPoliciesQuestion create(
+  private static SummarizeRoutingPolicyQuestion create(
           @JsonProperty(PROP_NODES) @Nullable String nodes) {
-    return new CategorizeRoutingPoliciesQuestion(nodes);
+    return new SummarizeRoutingPolicyQuestion(nodes);
   }
 
-  public CategorizeRoutingPoliciesQuestion(@Nullable String nodes) {
+  public SummarizeRoutingPolicyQuestion(@Nullable String nodes) {
     _nodes = nodes;
     _nodeSpecifier =
             SpecifierFactories.getNodeSpecifierOrDefault(nodes, AllNodesNodeSpecifier.INSTANCE);
@@ -34,7 +34,7 @@ public class CategorizeRoutingPoliciesQuestion extends Question {
 
   @Override
   public String getName() {
-    return "categorizeRoutingPolicies";
+    return "summarizeRoutingPolicy";
   }
 
   @JsonProperty(PROP_NODES)
@@ -49,10 +49,10 @@ public class CategorizeRoutingPoliciesQuestion extends Question {
 
   @Override
   public boolean equals(@Nullable Object o) {
-    if (!(o instanceof CategorizeRoutingPoliciesQuestion)) {
+    if (!(o instanceof SummarizeRoutingPolicyQuestion)) {
       return false;
     }
-    CategorizeRoutingPoliciesQuestion that = (CategorizeRoutingPoliciesQuestion) o;
+    SummarizeRoutingPolicyQuestion that = (SummarizeRoutingPolicyQuestion) o;
     return Objects.equals(_nodes, that._nodes)
             && Objects.equals(_nodeSpecifier, that._nodeSpecifier);
   }

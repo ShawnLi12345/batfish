@@ -1,15 +1,17 @@
-package org.batfish.question.routepolicyproperties;
+package org.batfish.minesweeper.question.routepolicyproperties;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 
-import java.util.HashMap;
+import java.util.stream.Collectors;
 import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.stream.Collectors;
+import java.util.AbstractMap;
 
 import org.batfish.common.Answerer;
 import org.batfish.common.NetworkSnapshot;
@@ -35,6 +37,9 @@ import org.batfish.datamodel.table.ColumnMetadata;
 import org.batfish.datamodel.table.Row;
 import org.batfish.datamodel.table.TableAnswerElement;
 import org.batfish.datamodel.table.TableMetadata;
+import org.batfish.minesweeper.ConfigAtomicPredicates;
+import org.batfish.minesweeper.bdd.TransferBDD;
+import org.batfish.minesweeper.bdd.TransferReturn;
 import org.batfish.specifier.NodeSpecifier;
 import org.batfish.specifier.SpecifierContext;
 
@@ -279,6 +284,16 @@ public class CategorizeRoutingPoliciesAnswerer extends Answerer {
     for(String node : nodeSpecifier.resolve(ctxt)){
       classified.clear();
       Configuration config = ctxt.getConfigs().get(node);
+
+      ConfigAtomicPredicates configAPs =
+              new ConfigAtomicPredicates(
+                      ImmutableList.of(
+                              new AbstractMap.SimpleImmutableEntry<>(
+                                      config, config.getRoutingPolicies().values())),
+                      ImmutableSet.of(),   // extraCommunities
+                      ImmutableSet.of());
+      TransferBDD tBDD = new TransferBDD(configAPs);
+
       if (config.getDefaultVrf() == null) continue;
       BgpProcess bProcess = config.getDefaultVrf().getBgpProcess();
       if(bProcess == null)continue;
@@ -322,6 +337,9 @@ public class CategorizeRoutingPoliciesAnswerer extends Answerer {
         for(String ex : af.getExportPolicySources()){
           RoutingPolicy policy = config.getRoutingPolicies().get(ex);
           StanzaCategoryCount c = classified.computeIfAbsent(ex, k -> analyzeRouteMap(policy));
+          List<TransferReturn> paths = tBDD.computePaths(policy,true);
+          System.out.println(paths);
+
           exportTag        += c.Tag;
           exportAll        += c.AcceptAll;
           exportNone       += c.DenyAll;

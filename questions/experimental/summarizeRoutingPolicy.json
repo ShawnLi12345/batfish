@@ -1,10 +1,10 @@
 {
-    "class": "org.batfish.minesweeper.question.routepolicyproperties.CategorizeRoutingPoliciesQuestion",
+    "class": "org.batfish.minesweeper.question.routepolicyproperties.SummarizeRoutingPolicyQuestion",
     "differential": false,
     "nodes": "${nodes}",
     "instance": {
-        "description": "Counts routing policies categorized by route filtering policy and by import/export direction.",
-        "instanceName": "categorizeRoutingPolicies",
+        "description": "Summarizes the behavior of each routing policy.",
+        "instanceName": "summarizeRoutingPolicy",
         "orderedVariableNames": [
             "nodes"
         ],
