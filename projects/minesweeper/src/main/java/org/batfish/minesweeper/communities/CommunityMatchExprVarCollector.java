@@ -113,7 +113,18 @@ public class CommunityMatchExprVarCollector
     checkArgument(
         communityMatchRegex.getCommunityRendering().equals(ColonSeparatedRendering.instance()),
         "Currently only supporting community regexes using the colon-separated rendering");
-    return ImmutableSet.of(CommunityVar.from(communityMatchRegex.getRegex()));
+    CommunityVar var = CommunityVar.from(communityMatchRegex.getRegex());
+    // Community regexes are assumed to match standard communities (see CommunityVar). A regex that
+    // only matches extended/large communities (e.g. "65000:19782:1") has an empty automaton once
+    // intersected with the standard-community syntax, so it cannot be represented as a standard
+    // community atomic predicate and would crash RegexAtomicPredicates. We drop it here so it never
+    // enters the atomic-predicate partition. The BDD analysis recognizes the resulting empty var
+    // set (see CommunityMatchExprToBDD.visitCommunityMatchRegex) and conservatively treats such a
+    // match as always satisfiable.
+    if (var.toAutomaton().isEmpty()) {
+      return ImmutableSet.of();
+    }
+    return ImmutableSet.of(var);
   }
 
   @Override

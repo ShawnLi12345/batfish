@@ -4,6 +4,8 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 
 import java.util.AbstractMap;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -21,8 +23,11 @@ import org.batfish.datamodel.questions.Question;
 import org.batfish.datamodel.routing_policy.RoutingPolicy;
 import org.batfish.datamodel.routing_policy.expr.BooleanExpr;
 import org.batfish.datamodel.routing_policy.expr.BooleanExprs;
+import org.batfish.datamodel.routing_policy.expr.CallExpr;
 import org.batfish.datamodel.routing_policy.expr.Conjunction;
 import org.batfish.datamodel.routing_policy.expr.Disjunction;
+import org.batfish.datamodel.routing_policy.expr.Not;
+import org.batfish.datamodel.routing_policy.statement.CallStatement;
 import org.batfish.datamodel.routing_policy.statement.ExcludeAsPath;
 import org.batfish.datamodel.routing_policy.statement.If;
 import org.batfish.datamodel.routing_policy.statement.PrependAsPath;
@@ -46,6 +51,8 @@ import org.batfish.datamodel.routing_policy.statement.SetVarMetricType;
 import org.batfish.datamodel.routing_policy.statement.SetWeight;
 import org.batfish.datamodel.routing_policy.statement.Statement;
 import org.batfish.datamodel.routing_policy.statement.TraceableStatement;
+import org.batfish.datamodel.routing_policy.expr.CallExpr;
+import org.batfish.datamodel.routing_policy.statement.CallStatement;
 import org.batfish.datamodel.table.ColumnMetadata;
 import org.batfish.datamodel.table.Row;
 import org.batfish.datamodel.table.TableAnswerElement;
@@ -90,6 +97,26 @@ public class SummarizeRoutingPolicyAnswerer extends Answerer {
     return answer;
   }
 
+  private static Map<String, PolicySummary> PolicyMap = new HashMap<>();
+
+  private static PolicySummary createPolicySummary(Configuration config, RoutingPolicy policy) {
+    PolicySummary cnt = new PolicySummary();
+    Set<String> visited = new HashSet<>();
+    visited.add(policy.getName());
+    walkStanzas(policy.getStatements(), config.getRoutingPolicies(), visited, cnt);
+
+    ConfigAtomicPredicates configAPs =
+            new ConfigAtomicPredicates(
+                    ImmutableList.of(
+                            new AbstractMap.SimpleImmutableEntry<>(
+                                    config, ImmutableList.of(policy))),
+                    ImmutableSet.of(),
+                    ImmutableSet.of());
+    TransferBDD tBDD = new TransferBDD(configAPs);
+    cnt.paths = countPath(tBDD,policy);
+    return cnt;
+  }
+
   @VisibleForTesting
   static List<Row> getAnswerRows(
           SpecifierContext ctxt,
@@ -101,29 +128,15 @@ public class SummarizeRoutingPolicyAnswerer extends Answerer {
       Configuration config = ctxt.getConfigs().get(node);
       if (config == null) continue;
 
-      ConfigAtomicPredicates configAPs =
-              new ConfigAtomicPredicates(
-                      ImmutableList.of(
-                              new AbstractMap.SimpleImmutableEntry<>(
-                                      config, config.getRoutingPolicies().values())),
-                      ImmutableSet.of(),
-                      ImmutableSet.of());
-      TransferBDD tBDD = new TransferBDD(configAPs);
       for (RoutingPolicy policy : config.getRoutingPolicies().values()) {
         if(policy.getName().startsWith("~"))continue;
-        StanzaCategoryCount cnt = new StanzaCategoryCount();
-/*
-        System.out.println(config.getVendorFamily()+"   "+node+"   "+policy.getName());
-        for(Statement st : policy.getStatements()) {
-          System.out.println(st.toString()+"\n");
-        }
-        System.out.println("\n");
-*/
-        walkStanzas(policy.getStatements(), cnt);
+
+        PolicySummary cnt = createPolicySummary(config, policy);
+        PolicyMap.put(policy.getName(),cnt);
         rows.add(Row.builder(columnMap)
                 .put(COL_NODE, node)
                 .put(COL_POLICY, policy.getName())
-                .put(COL_PATH_COUNT, countPath(tBDD, policy))
+                .put(COL_PATH_COUNT, cnt.paths)
                 .put(COL_STANZA_COUNT, cnt.stanzaCount)
                 .put(COL_CONDITIONS, String.join(", ",cnt.Conditions))
                 .put(COL_Attributes, String.join(", ",cnt.Attributes))
@@ -138,8 +151,9 @@ public class SummarizeRoutingPolicyAnswerer extends Answerer {
     return paths.size();
   }
 
-  static class StanzaCategoryCount{
+  static class PolicySummary{
     int stanzaCount;
+    int paths;
     Set<String> Attributes = new TreeSet<>();
     Set<String> Conditions = new TreeSet<>();
   }
@@ -189,25 +203,59 @@ public class SummarizeRoutingPolicyAnswerer extends Answerer {
     return attr;
   }
 
-  private static void walkStanzas(@Nonnull List<Statement> sts, StanzaCategoryCount count) {
+  private static void walkStanzas(
+      @Nonnull List<Statement> sts,
+      Map<String, RoutingPolicy> policies,
+      Set<String> visited,
+      PolicySummary count) {
     for (Statement s : sts) {
       if (s instanceof If ifs) {
-        count.stanzaCount++;
         BooleanExpr g = ifs.getGuard();
         boolean syntheticContext =
             BooleanExprs.CALL_EXPR_CONTEXT.equals(g)
                 || BooleanExprs.CALL_STATEMENT_CONTEXT.equals(g);
         if (!syntheticContext) {
           count.Conditions.add(getCondition(g));
+          count.stanzaCount++;
         }
-        walkStanzas(ifs.getTrueStatements(),count);
-        walkStanzas(ifs.getFalseStatements(), count);
+        walkGuard(g, policies, visited, count);
+        walkStanzas(ifs.getTrueStatements(), policies, visited, count);
+        walkStanzas(ifs.getFalseStatements(), policies, visited, count);
       } else if (s instanceof TraceableStatement ts) {
-        walkStanzas(ts.getInnerStatements(), count);
-      }
-      else if(isAttributeModifier(s)) {
+        walkStanzas(ts.getInnerStatements(), policies, visited, count);
+      } else if (s instanceof CallStatement cs) {
+        walkCalledPolicy(cs.getCalledPolicyName(), policies, visited, count);
+      } else if (isAttributeModifier(s)) {
         count.Attributes.add(s.getClass().getSimpleName());
       }
+    }
+  }
+
+  private static void walkCalledPolicy(
+      String name,
+      Map<String, RoutingPolicy> policies,
+      Set<String> visited,
+      PolicySummary count) {
+    RoutingPolicy called = policies.get(name);
+    if (called == null || !visited.add(name)) {
+      return;
+    }
+    walkStanzas(called.getStatements(), policies, visited, count);
+  }
+
+  private static void walkGuard(
+      BooleanExpr g,
+      Map<String, RoutingPolicy> policies,
+      Set<String> visited,
+      PolicySummary count) {
+    if (g instanceof CallExpr ce) {
+      walkCalledPolicy(ce.getCalledPolicyName(), policies, visited, count);
+    } else if (g instanceof Conjunction c) {
+      c.getConjuncts().forEach(e -> walkGuard(e, policies, visited, count));
+    } else if (g instanceof Disjunction d) {
+      d.getDisjuncts().forEach(e -> walkGuard(e, policies, visited, count));
+    } else if (g instanceof Not n) {
+      walkGuard(n.getExpr(), policies, visited, count);
     }
   }
 

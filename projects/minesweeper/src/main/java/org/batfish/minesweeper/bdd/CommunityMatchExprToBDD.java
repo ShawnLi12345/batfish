@@ -125,9 +125,15 @@ public class CommunityMatchExprToBDD implements CommunityMatchExprVisitor<BDD, A
 
   @Override
   public BDD visitCommunityMatchRegex(CommunityMatchRegex communityMatchRegex, Arg arg) {
-    return CommunitySetMatchExprToBDD.communityVarsToBDD(
-        communityMatchRegex.accept(new CommunityMatchExprVarCollector(), arg.getConfiguration()),
-        arg);
+    Set<CommunityVar> commVars =
+        communityMatchRegex.accept(new CommunityMatchExprVarCollector(), arg.getConfiguration());
+    if (commVars.isEmpty()) {
+      // The regex only matches extended/large communities (see
+      // CommunityMatchExprVarCollector.visitCommunityMatchRegex), which we do not model. Rather
+      // than treat the match as unsatisfiable, conservatively assume it always matches.
+      return arg.getTransferBDD().getFactory().one();
+    }
+    return CommunitySetMatchExprToBDD.communityVarsToBDD(commVars, arg);
   }
 
   @Override
