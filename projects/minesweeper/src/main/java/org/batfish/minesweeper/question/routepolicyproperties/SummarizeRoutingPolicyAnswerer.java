@@ -3,13 +3,12 @@ package org.batfish.minesweeper.question.routepolicyproperties;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 
-import java.util.AbstractMap;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeSet;
+import java.util.HashSet;
+import java.util.TreeMap;
+import java.util.List;
+import java.util.AbstractMap;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableSet;
@@ -51,8 +50,6 @@ import org.batfish.datamodel.routing_policy.statement.SetVarMetricType;
 import org.batfish.datamodel.routing_policy.statement.SetWeight;
 import org.batfish.datamodel.routing_policy.statement.Statement;
 import org.batfish.datamodel.routing_policy.statement.TraceableStatement;
-import org.batfish.datamodel.routing_policy.expr.CallExpr;
-import org.batfish.datamodel.routing_policy.statement.CallStatement;
 import org.batfish.datamodel.table.ColumnMetadata;
 import org.batfish.datamodel.table.Row;
 import org.batfish.datamodel.table.TableAnswerElement;
@@ -71,9 +68,11 @@ import org.batfish.datamodel.routing_policy.communities.SetCommunities;
 public class SummarizeRoutingPolicyAnswerer extends Answerer {
 
   public static final String COL_NODE = "Node";
+  public static final String COL_VENDOR = "Vendor";
   public static final String COL_POLICY = "Policy";
   public static final String COL_PATH_COUNT = "Path_Count";
-  public static final String COL_STANZA_COUNT = "Stanza_Count";
+  public static final String COL_IF_COUNT = "If_Count";
+  public static final String COL_TRACEABLE_STATEMENT_COUNT = "TraceableStatement_Count";
   public static final String COL_CONDITIONS = "Conditions";
   public static final String COL_Attributes = "Attributes";
 
@@ -97,14 +96,11 @@ public class SummarizeRoutingPolicyAnswerer extends Answerer {
     return answer;
   }
 
-  private static Map<String, PolicySummary> PolicyMap = new HashMap<>();
-
   private static PolicySummary createPolicySummary(Configuration config, RoutingPolicy policy) {
     PolicySummary cnt = new PolicySummary();
-    Set<String> visited = new HashSet<>();
-    visited.add(policy.getName());
-    walkStanzas(policy.getStatements(), config.getRoutingPolicies(), visited, cnt);
-
+    Set<String> onPath = new HashSet<>();
+    onPath.add(policy.getName());
+    walkStanzas(policy.getStatements(), config.getRoutingPolicies(), onPath, cnt);
     ConfigAtomicPredicates configAPs =
             new ConfigAtomicPredicates(
                     ImmutableList.of(
@@ -132,14 +128,15 @@ public class SummarizeRoutingPolicyAnswerer extends Answerer {
         if(policy.getName().startsWith("~"))continue;
 
         PolicySummary cnt = createPolicySummary(config, policy);
-        PolicyMap.put(policy.getName(),cnt);
         rows.add(Row.builder(columnMap)
                 .put(COL_NODE, node)
+                .put(COL_VENDOR, config.getConfigurationFormat().name().toLowerCase().replace('_', '-'))
                 .put(COL_POLICY, policy.getName())
                 .put(COL_PATH_COUNT, cnt.paths)
-                .put(COL_STANZA_COUNT, cnt.stanzaCount)
-                .put(COL_CONDITIONS, String.join(", ",cnt.Conditions))
-                .put(COL_Attributes, String.join(", ",cnt.Attributes))
+                .put(COL_IF_COUNT, cnt.ifCount)
+                .put(COL_TRACEABLE_STATEMENT_COUNT, cnt.traceableStatementCount)
+                .put(COL_CONDITIONS, cnt.Conditions.entrySet().stream().map(e -> e.getKey() + " " + e.getValue()).collect(Collectors.joining(", ")))
+                .put(COL_Attributes, cnt.Attributes.entrySet().stream().map(e -> e.getKey() + " " + e.getValue()).collect(Collectors.joining(", ")))
                 .build());
       }
     }
@@ -152,10 +149,11 @@ public class SummarizeRoutingPolicyAnswerer extends Answerer {
   }
 
   static class PolicySummary{
-    int stanzaCount;
+    int ifCount;
+    int traceableStatementCount;
     int paths;
-    Set<String> Attributes = new TreeSet<>();
-    Set<String> Conditions = new TreeSet<>();
+    Map<String, Integer> Attributes = new TreeMap<>();
+    Map<String, Integer> Conditions = new TreeMap<>();
   }
 
   static boolean isAttributeModifier(Statement s) {
@@ -206,7 +204,7 @@ public class SummarizeRoutingPolicyAnswerer extends Answerer {
   private static void walkStanzas(
       @Nonnull List<Statement> sts,
       Map<String, RoutingPolicy> policies,
-      Set<String> visited,
+      Set<String> onPath,
       PolicySummary count) {
     for (Statement s : sts) {
       if (s instanceof If ifs) {
@@ -215,18 +213,19 @@ public class SummarizeRoutingPolicyAnswerer extends Answerer {
             BooleanExprs.CALL_EXPR_CONTEXT.equals(g)
                 || BooleanExprs.CALL_STATEMENT_CONTEXT.equals(g);
         if (!syntheticContext) {
-          count.Conditions.add(getCondition(g));
-          count.stanzaCount++;
+          count.Conditions.merge(getCondition(g),1,Integer::sum);
+          count.ifCount++;
         }
-        walkGuard(g, policies, visited, count);
-        walkStanzas(ifs.getTrueStatements(), policies, visited, count);
-        walkStanzas(ifs.getFalseStatements(), policies, visited, count);
+        walkGuard(g, policies, onPath, count);
+        walkStanzas(ifs.getTrueStatements(), policies, onPath, count);
+        walkStanzas(ifs.getFalseStatements(), policies, onPath, count);
       } else if (s instanceof TraceableStatement ts) {
-        walkStanzas(ts.getInnerStatements(), policies, visited, count);
+        count.traceableStatementCount++;
+        walkStanzas(ts.getInnerStatements(), policies, onPath, count);
       } else if (s instanceof CallStatement cs) {
-        walkCalledPolicy(cs.getCalledPolicyName(), policies, visited, count);
+        walkCalledPolicy(cs.getCalledPolicyName(), policies, onPath, count);
       } else if (isAttributeModifier(s)) {
-        count.Attributes.add(s.getClass().getSimpleName());
+        count.Attributes.merge(s.getClass().getSimpleName(),1,Integer::sum);
       }
     }
   }
@@ -234,28 +233,27 @@ public class SummarizeRoutingPolicyAnswerer extends Answerer {
   private static void walkCalledPolicy(
       String name,
       Map<String, RoutingPolicy> policies,
-      Set<String> visited,
+      Set<String> onPath,
       PolicySummary count) {
     RoutingPolicy called = policies.get(name);
-    if (called == null || !visited.add(name)) {
-      return;
-    }
-    walkStanzas(called.getStatements(), policies, visited, count);
+    if (called == null || !onPath.add(name)) return;
+    walkStanzas(called.getStatements(), policies, onPath, count);
+    onPath.remove(name);
   }
 
   private static void walkGuard(
       BooleanExpr g,
       Map<String, RoutingPolicy> policies,
-      Set<String> visited,
+      Set<String> onPath,
       PolicySummary count) {
     if (g instanceof CallExpr ce) {
-      walkCalledPolicy(ce.getCalledPolicyName(), policies, visited, count);
+      walkCalledPolicy(ce.getCalledPolicyName(), policies, onPath, count);
     } else if (g instanceof Conjunction c) {
-      c.getConjuncts().forEach(e -> walkGuard(e, policies, visited, count));
+      c.getConjuncts().forEach(e -> walkGuard(e, policies, onPath, count));
     } else if (g instanceof Disjunction d) {
-      d.getDisjuncts().forEach(e -> walkGuard(e, policies, visited, count));
+      d.getDisjuncts().forEach(e -> walkGuard(e, policies, onPath, count));
     } else if (g instanceof Not n) {
-      walkGuard(n.getExpr(), policies, visited, count);
+      walkGuard(n.getExpr(), policies, onPath, count);
     }
   }
 
@@ -265,11 +263,15 @@ public class SummarizeRoutingPolicyAnswerer extends Answerer {
                     new ColumnMetadata(
                             COL_NODE, Schema.STRING, "Node name", true, false),
                     new ColumnMetadata(
+                            COL_VENDOR, Schema.STRING, "Router vendor", false, false),
+                    new ColumnMetadata(
                             COL_POLICY, Schema.STRING, "Routing policy name", true, false),
                     new ColumnMetadata(
                             COL_PATH_COUNT, Schema.INTEGER, "Count of possible paths", false, true),
                     new ColumnMetadata(
-                            COL_STANZA_COUNT, Schema.INTEGER, "Stanza Count", false, true),
+                            COL_IF_COUNT, Schema.INTEGER, "Count of If statements", false, true),
+                    new ColumnMetadata(
+                            COL_TRACEABLE_STATEMENT_COUNT, Schema.INTEGER, "Count of TraceableStatements", false, true),
                     new ColumnMetadata(
                             COL_CONDITIONS, Schema.STRING, "List of Routing Policy Conditions", false, true),
                     new ColumnMetadata(
